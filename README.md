@@ -1,10 +1,12 @@
+Tabii kanka, tek parça düzgün `.md` olarak veriyorum. Bunu direkt `README.md` içine yapıştır:
+
 # FiveM Medical Tablet
 
-A modern medical tablet and EMS interface for FiveM, created with FiveM Script Maker.
+A modern FiveM medical tablet and EMS interface created with FiveM Script Maker.
 
 This resource demonstrates how a complete FiveM medical system can be designed with a modern NUI interface and integrated gameplay logic.
 
-Built for developers and server owners looking for a clean foundation for a FiveM EMS script, ambulance job, hospital system, medical MDT or doctor tablet.
+Built for developers and server owners looking for a clean foundation for a FiveM EMS script, ambulance job, hospital system, medical MDT, or doctor tablet.
 
 ## Preview
 
@@ -32,15 +34,16 @@ This resource can be used as a foundation for:
 - FiveM Hospital Script
 - FiveM Medical Tablet
 - FiveM EMS MDT
-- Doctor Management System
+- FiveM Doctor Script
 - Paramedic System
-- Roleplay Medical Records
+- Medical Records System
+- Roleplay Hospital Management
 
 ## Built with FiveM Script Maker
 
-This resource was created using **FiveM Script Maker**, an AI-powered development platform built specifically for FiveM.
+This resource was created using FiveM Script Maker, an AI-powered development platform built specifically for FiveM.
 
-Create custom FiveM scripts, interfaces and gameplay systems using simple prompts.
+Create custom FiveM scripts, interfaces, and gameplay systems using simple prompts.
 
 Website:
 
@@ -60,17 +63,45 @@ FiveM Script Maker can help create:
 - Qbox resources
 - ESX resources
 - ox_core resources
-- client-side Lua
-- server-side Lua
-- database integrations
-- custom UI systems
-- gameplay mechanics
+- Client-side Lua
+- Server-side Lua
+- Database integrations
+- Custom UI systems
+- Gameplay mechanics
 
 From interface design to backend implementation, projects can be developed inside the same AI-powered workspace.
 
 ## Installation
 
-Download or clone the resource and place it inside your FiveM resources directory.
+Clone or download the resource and place it inside your FiveM resources directory.
 
 ```bash
 git clone https://github.com/fivem-script-maker/fsm_medtab.git
+````
+
+Add the resource to your `server.cfg`:
+
+```cfg
+ensure fsm_medtab
+```
+
+Additional configuration may be required depending on your framework and server setup.
+
+## Customize It
+
+Want to build your own version of this medical tablet or create a completely different FiveM script?
+
+Visit:
+
+[https://fivemscriptmaker.com](https://fivemscriptmaker.com)
+
+Describe what you want to build and create your own FiveM resource with AI.
+
+## Keywords
+
+FiveM Medical Script, FiveM EMS Script, FiveM Medical Tablet, FiveM Ambulance Script, FiveM Hospital Script, FiveM EMS MDT, FiveM Doctor Script, FiveM NUI, FiveM AI, FiveM Script Maker, FiveM Scripts, QBCore Scripts, ESX Scripts, Qbox Scripts, ox_core Scripts
+
+## License
+
+Check the repository license before redistribution or commercial use.
+`https://fivemscriptmaker.com`
