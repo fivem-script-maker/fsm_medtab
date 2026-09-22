@@ -1,0 +1,494 @@
+@import "tailwindcss";
+
+/* The multi-column, no-scroll tablet layout needs vertical room as much as
+   width: on a 1366x768 screen the columns fit but the panels do not, and a
+   height-constrained panel collapses and paints over its neighbour. Gate that
+   layout on both axes; anything shorter keeps definite panel heights and
+   scrolls the page instead. */
+@custom-variant roomy (@media (min-width: 1280px) and (min-height: 700px));
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MEDTAB — EMS Medical Tablet. Dark / crimson / pink.
+   Tokens first, component classes inside @layer components so Tailwind
+   utilities always win over them (a class written outside the layer system
+   outranks utilities and they silently stop applying).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --font-display: "Archivo", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --color-crit: #ff2d55;
+  --color-crit-deep: #7a0a24;
+  --color-pink: #ff74a8;
+  --color-pink-2: #ff9cc2;
+  --color-ink: #0b0710;
+  --color-panel: #120a13;
+  --color-panel-2: #180d18;
+  --color-paper: #fdebf2;
+}
+
+:root {
+  --bg: #06040a;
+  --ink: #0b0710;
+  --panel: #120a13;
+  --panel-2: #180d18;
+
+  --crit: #ff2d55;
+  --crit-2: #e01040;
+  --crit-deep: #7a0a24;
+  --pink: #ff74a8;
+  --pink-2: #ff9cc2;
+  --pink-soft: rgba(255, 116, 168, 0.12);
+  --crit-soft: rgba(255, 45, 85, 0.13);
+
+  --line: rgba(255, 120, 165, 0.13);
+  --line-2: rgba(255, 120, 165, 0.07);
+  --line-hot: rgba(255, 45, 85, 0.34);
+
+  --text: #fdebf2;
+  --text-dim: #c79baf;
+  --text-faint: #8a667a;
+
+  /* Triage tags are a real-world standard — semantic, not theme colours. */
+  --tri-red: #ff2d55;
+  --tri-yellow: #ffc24b;
+  --tri-green: #35e0a1;
+  --tri-black: #7e8794;
+
+  --ok: #35e0a1;
+  --warn: #ffc24b;
+}
+
+html, body, #root { height: 100%; }
+* { box-sizing: border-box; }
+
+body {
+  background: #050308;
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* ── STUDIO-MANAGED: guaranteed cinematic backdrop, do NOT remove ─────────
+   A fixed, full-viewport GTA V scene sits BEHIND the whole app, with a
+   dark vignette on top for text contrast. The studio guarantees the image
+   (web/public/img/backdrop.jpg) exists for every build, reused free from a
+   shared per-concept cache, or a tiled leather fallback. Build your UI on
+   top of this; to change the scene, replace img/backdrop.jpg (or ask the
+   image generator to). Never delete this layer, the screen behind the
+   panel reads as part of one interface. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  /* Scene on top; a warm leather-tone gradient underneath is the fallback for
+     the brief window before the studio drops the concept scene (or a cold
+     concept), reads as aged leather, never a flat black void. */
+  background:
+    var(--fsm-backdrop, none) center / cover no-repeat,
+    radial-gradient(135% 105% at 50% 0%, #1c1611 0%, #0b0806 55%, #030302 100%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(125% 95% at 50% 12%, rgba(10,6,4,.35) 0%, rgba(0,0,0,.82) 78%);
+}
+/* ── end STUDIO-MANAGED ───────────────────────────────────────────────────*/
+
+/* ── STUDIO-MANAGED: in-game transparency guard, do NOT remove ────────────
+   In FiveM the NUI (CEF) layer MUST be transparent so the game shows through.
+   The backdrop scene above is a PREVIEW-ONLY device: in the studio there is
+   nothing behind the page, so a cinematic scene makes the UI presentable. In
+   game there IS something behind the page — the world — and covering it is
+   never right.
+
+   So in game the scene NEVER paints, not on start and not while a panel is
+   open. Opening a menu used to bring both full-viewport layers back, and both
+   are opaque (the scene sits on a solid gradient, the vignette ends at 82%
+   black), which blacked out the game behind every panel. A menu is allowed to
+   dim what is behind it, not replace it, so open state gets a light uniform
+   scrim instead — enough for text contrast, still clearly the game underneath.
+
+   Panels paint their own backgrounds. Never put one on html/body. */
+html.fsm-ingame, html.fsm-ingame body { background: transparent !important; }
+html.fsm-ingame body::before { display: none !important; }
+html.fsm-ingame body::after { display: none !important; }
+html.fsm-ingame.fsm-open body::after {
+  display: block !important;
+  background: rgba(0, 0, 0, 0.38) !important;
+}
+/* ── end STUDIO-MANAGED ───────────────────────────────────────────────────*/
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,116,168,.04); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--crit), var(--crit-deep)); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, var(--pink), var(--crit)); }
+::-webkit-scrollbar-corner { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--crit-2) rgba(255,116,168,.05); }
+
+/* Unlayered rules outrank every layered utility, so this normalisation has to
+   live in `base`: as a bare rule the `font` shorthand reset the size on every
+   control in the tablet and each `text-[…px]` on a button or input was ignored. */
+@layer base {
+  input, textarea, select, button { font: inherit; color: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; }
+  ::selection { background: rgba(255,45,85,.35); color: #fff; }
+}
+
+@layer components {
+  /* ── Chassis ─────────────────────────────────────────────────────────── */
+  .mt-bezel {
+    position: relative;
+    background:
+      linear-gradient(200deg, rgba(255,116,168,.10) 0%, rgba(255,45,85,.02) 28%, rgba(0,0,0,0) 55%),
+      linear-gradient(180deg, #1a0f19 0%, #0d070d 48%, #120a12 100%);
+    box-shadow:
+      0 0 0 1px rgba(255,120,165,.16),
+      0 1px 0 rgba(255,190,215,.10) inset,
+      0 -1px 0 rgba(0,0,0,.7) inset,
+      0 50px 120px -40px rgba(255,45,85,.22),
+      0 60px 140px -50px #000;
+  }
+  .mt-screen {
+    position: relative;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(255,45,85,.11) 0%, rgba(255,45,85,0) 58%),
+      linear-gradient(180deg, rgba(14,8,15,.96) 0%, rgba(8,5,10,.97) 100%);
+    box-shadow: 0 0 0 1px rgba(255,120,165,.10) inset, 0 0 70px -10px rgba(255,45,85,.14) inset;
+  }
+
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
+  .mt-panel {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,116,168,.055) 0%, rgba(255,45,85,0) 46%),
+      linear-gradient(180deg, rgba(25,14,25,.88) 0%, rgba(13,8,14,.92) 100%);
+    border: 1px solid var(--line);
+    box-shadow:
+      0 1px 0 rgba(255,190,215,.07) inset,
+      0 22px 50px -32px #000;
+  }
+  .mt-panel-hot {
+    border-color: var(--line-hot);
+    box-shadow:
+      0 1px 0 rgba(255,190,215,.10) inset,
+      0 0 0 1px rgba(255,45,85,.10),
+      0 0 40px -14px rgba(255,45,85,.55),
+      0 22px 50px -32px #000;
+  }
+  .mt-inset {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.42) 0%, rgba(255,116,168,.035) 100%);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 2px 10px -4px #000 inset;
+  }
+  .mt-raise {
+    background:
+      linear-gradient(180deg, rgba(255,116,168,.10) 0%, rgba(255,45,85,.02) 60%),
+      linear-gradient(180deg, rgba(34,19,33,.9), rgba(19,11,19,.9));
+    border: 1px solid var(--line);
+  }
+
+  /* hairline divider that fades at both ends */
+  .mt-hair {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-hot) 18%, var(--line-hot) 82%, transparent);
+  }
+
+  /* faint technical grid, for map / chart beds */
+  .mt-grid {
+    background-image:
+      linear-gradient(rgba(255,116,168,.055) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,116,168,.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  /* diagonal hazard stripes, for priority markers */
+  .mt-stripes {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgba(255,45,85,.5) 0 6px,
+      rgba(255,45,85,0) 6px 12px
+    );
+  }
+  /* CRT scanline veil over live monitor surfaces */
+  .mt-scan::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);
+    mix-blend-mode: multiply;
+    opacity: .55;
+  }
+
+  /* ── Controls ────────────────────────────────────────────────────────── */
+  .mt-btn {
+    position: relative;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,116,168,.09), rgba(255,45,85,.02));
+    color: var(--text-dim);
+    transition: color .18s, border-color .18s, background .18s, box-shadow .18s, transform .12s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mt-btn:hover {
+    color: var(--text);
+    border-color: var(--line-hot);
+    background: linear-gradient(180deg, rgba(255,116,168,.16), rgba(255,45,85,.05));
+    box-shadow: 0 0 24px -10px rgba(255,45,85,.7);
+  }
+  .mt-btn:active { transform: translateY(1px); }
+  .mt-btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: none; transform: none; }
+
+  .mt-btn-primary {
+    color: #fff;
+    border-color: rgba(255,45,85,.55);
+    background: linear-gradient(180deg, var(--crit) 0%, var(--crit-2) 55%, #9c0c2c 100%);
+    box-shadow:
+      0 1px 0 rgba(255,190,215,.35) inset,
+      0 0 30px -10px rgba(255,45,85,.9);
+  }
+  .mt-btn-primary:hover {
+    background: linear-gradient(180deg, #ff5074 0%, var(--crit) 55%, #b30f34 100%);
+    box-shadow: 0 1px 0 rgba(255,190,215,.45) inset, 0 0 40px -8px rgba(255,45,85,1);
+  }
+
+  .mt-field {
+    font-size: 11px;
+    background: linear-gradient(180deg, rgba(0,0,0,.45), rgba(255,116,168,.03));
+    border: 1px solid var(--line-2);
+    color: var(--text);
+    transition: border-color .18s, box-shadow .18s;
+  }
+  .mt-field::placeholder { color: var(--text-faint); }
+  .mt-field:focus {
+    border-color: var(--line-hot);
+    box-shadow: 0 0 0 3px rgba(255,45,85,.10);
+  }
+
+  .mt-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border: 1px solid currentColor;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* tabular numbers everywhere a value ticks */
+  .mt-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────*/
+@keyframes mt-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+@keyframes mt-ping {
+  0% { transform: scale(.7); opacity: .75; }
+  70% { transform: scale(2.3); opacity: 0; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+@keyframes mt-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes mt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mt-radar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes mt-breathe {
+  0%, 100% { box-shadow: 0 0 22px -12px rgba(255,45,85,.8); }
+  50% { box-shadow: 0 0 46px -8px rgba(255,45,85,1); }
+}
+.mt-a-pulse { animation: mt-pulse 1.6s ease-in-out infinite; }
+.mt-a-ping { animation: mt-ping 2s cubic-bezier(0,0,.2,1) infinite; }
+.mt-a-rise { animation: mt-rise .35s cubic-bezier(.2,.8,.2,1) both; }
+.mt-a-radar { animation: mt-radar 4s linear infinite; transform-origin: center; }
+.mt-a-breathe { animation: mt-breathe 2.4s ease-in-out infinite; }
+.mt-a-sweep { animation: mt-sweep 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-a-pulse, .mt-a-ping, .mt-a-radar, .mt-a-breathe, .mt-a-sweep { animation: none; }
+}
+
+/* ── Leaflet dispatch map ──────────────────────────────────────────────────
+   Leaflet ships its own stylesheet outside Tailwind's layers, so it outranks
+   utilities on every `.leaflet-*` selector. Restyling it therefore has to
+   happen here, in plain CSS, rather than with classes on the elements. */
+
+.mt-map {
+  background: linear-gradient(160deg, rgba(18, 10, 19, 0.96), rgba(6, 4, 10, 0.99));
+}
+
+.mt-map-clickable .leaflet-grab {
+  cursor: zoom-in;
+}
+
+.mt-map .leaflet-container {
+  background: transparent;
+  font-family: inherit;
+  outline: none;
+}
+
+/* The plate is photographic; the interface is not. Knock it back so the pins
+   stay the brightest thing on the map and the red/pink palette still reads. */
+.mt-map .leaflet-image-layer,
+.mt-map .leaflet-tile {
+  filter: saturate(0.55) brightness(0.62) contrast(1.08);
+}
+
+.mt-map .leaflet-marker-icon.mt-map-icon {
+  background: none;
+  border: 0;
+}
+
+/* ── call pins ── */
+.mt-map-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+}
+
+.mt-map-pin-halo {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  border: 1px solid var(--pin);
+  background: color-mix(in srgb, var(--pin) 16%, transparent);
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.mt-map-pin.is-active .mt-map-pin-halo {
+  width: 22px;
+  height: 22px;
+  box-shadow: 0 0 18px -4px var(--pin);
+}
+
+.mt-map-pin-core {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--pin);
+  box-shadow: 0 0 10px 1.5px var(--pin);
+}
+
+.mt-map-ping {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border-width: 1.5px;
+  border-style: solid;
+  animation: mt-map-ping 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes mt-map-ping {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  80%, 100% { transform: scale(2.1); opacity: 0; }
+}
+
+/* ── unit chips ── */
+.mt-map-unit {
+  display: flex;
+  align-items: center;
+  /* The icon box is a fixed size so Leaflet can anchor it, but the plate
+     itself has to wrap whatever the callsign turns out to be — at 58px an
+     eight-character unit spilled its text past its own border. */
+  width: max-content;
+  gap: 4px;
+  padding: 2px 5px 2px 4px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--unit) 55%, transparent);
+  background: rgba(6, 4, 10, 0.8);
+  backdrop-filter: blur(2px);
+  white-space: nowrap;
+}
+
+.mt-map-unit.is-mine {
+  border-color: var(--pink);
+  box-shadow: 0 0 16px -5px var(--pink);
+}
+
+.mt-map-unit-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--unit);
+  box-shadow: 0 0 7px 1px var(--unit);
+  flex: none;
+}
+
+.mt-map-unit-label {
+  font-family: var(--font-mono, inherit);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.mt-map-unit.is-mine .mt-map-unit-label {
+  color: var(--pink-2);
+}
+
+/* "+2" — how many more units share this chip's scene. */
+.mt-map-unit-more {
+  font-family: var(--font-mono, inherit);
+  font-size: 8px;
+  line-height: 1;
+  padding: 2px 3px;
+  border-radius: 3px;
+  color: var(--pink-2);
+  background: color-mix(in srgb, var(--pink) 22%, transparent);
+  flex: none;
+}
+
+/* Divider between stacked units inside one tooltip. */
+.mt-map-tip-rule {
+  display: block;
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line-2);
+}
+
+/* ── tooltips ── */
+.leaflet-tooltip.mt-map-tip {
+  border-radius: 6px;
+  border: 1px solid var(--line-2);
+  background: rgba(6, 4, 10, 0.92);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.45;
+  padding: 5px 8px;
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(3px);
+}
+
+.leaflet-tooltip.mt-map-tip::before {
+  border-top-color: var(--line-2);
+}
+
+.mt-map-tip-dim {
+  color: var(--text-faint);
+  font-size: 9px;
+}
