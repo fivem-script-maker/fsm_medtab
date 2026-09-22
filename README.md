@@ -1,5 +1,3 @@
-Tabii kanka, tek parça düzgün `.md` olarak veriyorum. Bunu direkt `README.md` içine yapıştır:
-
 # FiveM Medical Tablet
 
 A modern FiveM medical tablet and EMS interface created with FiveM Script Maker.
